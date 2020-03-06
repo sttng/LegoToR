@@ -7,10 +7,10 @@
 
 ### Requirements
 
-* Python
+* Python (tested to work on Python 2.7.10)
 * LDD
-* macOS (Windows, Linux may work with small modifications)
-* Pixar RenderMan
+* macOS (tested on on macOS 10.14, but Windows & Linux may work with small modifications)
+* Pixar RenderMan (tested on RenderMan 22.3 - 23.1)
 
 ### Usage
 
