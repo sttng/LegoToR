@@ -13,7 +13,9 @@ LegoToR takes a LDD lfx file as input and converts it into a RenderMan compliant
 
 ### Simple Usage
 
+```
 /LegoToR.py myLDDinputfile.lxf -v -cam 0
+```
 
 ### Detailed Usage
 
