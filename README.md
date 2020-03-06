@@ -39,3 +39,7 @@
 ```
 
 #### Detailed Usage
+
+# Credits
+
+* jonnysp https://github.com/jonnysp for pyldd2obj.py. Most of the work is based on this great tool
