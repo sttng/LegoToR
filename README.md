@@ -10,6 +10,7 @@
 * Python
 * LDD
 * macOS (Windows, Linux may work with small modifications)
+* Pixar RenderMan
 
 ### Usage
 
