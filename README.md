@@ -22,6 +22,51 @@
 
 #### Detailed Usage
 
+```
+Detailed  usage: LegoToR.py [-h] [-s [SRATE]] [-p [PIXELVAR]] [-fo [FOV]] [-fs [FSTOP]]
+                  [-wd [WIDTH]] [-ht [HEIGHT]] [-sa [SEARCHARCHIVE]]
+                  [-st [SEARCHTEXTURE]] [-cam [CAMERA]] [-d] [-v] [-u] [-o]
+                  [-t] [-w] [-n] [-z] [-b] [-fl] [-np] [-nn] [-nl]
+                  infile
+
+mandatory arguments:
+  infile                required input LXF file
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s [SRATE], --srate [SRATE]
+                        modify shading rate. Default 10
+  -p [PIXELVAR], --pixelvar [PIXELVAR]
+                        modify the pixel variance. Default 0.1
+  -fo [FOV], --fov [FOV]
+                        projection fov. Default 25.0
+  -fs [FSTOP], --fstop [FSTOP]
+                        fStop. Default 9.99999968e+37 (unlimited)
+  -wd [WIDTH], --width [WIDTH]
+                        width of image. Default 1280
+  -ht [HEIGHT], --height [HEIGHT]
+                        height of image. Default 720
+  -sa [SEARCHARCHIVE], --searcharchive [SEARCHARCHIVE]
+                        searchpath archive. Default current working dir
+  -st [SEARCHTEXTURE], --searchtexture [SEARCHTEXTURE]
+                        searchpath texture. Default current working dir
+  -cam [CAMERA], --camera [CAMERA]
+                        set active camera. Default is -1 for Cam--1 'Minus 1'
+  -d, --default         use PxrPathTracer
+  -v, --vcm             use PxrVCM
+  -u, --unified         use PxrUnified. Enable also in rendermn.ini to work!
+  -o, --occlusion       use Occlusion
+  -t, --direct          use PxrDirect
+  -w, --wire            use PxrVisualizer with wireframe shaded
+  -n, --normals         use PxrVisualizer with wireframe and Normals
+  -z, --wst             use PxrVisualizer with wireframe and ST
+  -b, --bxdf            use PxrVisualizer with wireframe and bxdf
+  -fl, --flat           use PxrVisualizer with wireframe flat
+  -np, --noplane        disable ground plane. Useful for space ships!
+  -nn, --nonormals      disable writing of normals, as some normals in LDD may have problems
+  -nl, --nologo         disable logo on studs
+```
+
 ## LegoToRHD
 
 ### Usage
@@ -33,6 +78,20 @@
 ```
 
 #### Detailed Usage
+
+```
+Detailed  usage: LegoToR.py [-h] [-np] [-nn] [-nl]
+                  infile
+
+mandatory arguments:
+  infile                required input LXF file
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -np, --noplane        disable ground plane. Useful for space ships!
+  -nn, --nonormals      disable writing of normals, as some normals in LDD may have problems
+  -nl, --nologo         disable logo on studs
+```
 
 # Credits
 
