@@ -349,7 +349,29 @@ Display "{0}{1}{2}.beauty.001.exr" "openexr" "Ci,a,mse,albedo,albedo_var,diffuse
 		Attribute "visibility" "int camera" [1]
 		Rotate 50 0 1 0
 		Rotate -90 1 0 0
-		Light "PxrDomeLight" "domeLight" "string lightColorMap" ["islandsun_small.tex"]
+		Light "PxrDomeLight" "PxrDomeLight1"
+			"float intensity" [1.0]
+			"float exposure" [0] 
+			"color lightColor" [1 1 1]
+			"string lightColorMap" ['islandsun_small.tex'] #Luxo-Jr_4000x2000.tex
+			"vector colorMapGamma" [1.0 1.0 1.0]
+			"float colorMapSaturation" [1.0]
+			"int enableTemperature" [0]
+			"float temperature" [6500]
+			"float specular" [1.0]
+			"float diffuse" [1.0]
+			"int enableShadows" [1]
+			"color shadowColor" [0 0 0]
+			"float shadowDistance" [-1.0]
+			"float shadowFalloff" [-1.0]
+			"float shadowFalloffGamma" [1.0]
+			"string shadowSubset" ['']
+			"string shadowExcludeSubset" ['']
+			"int traceLightPaths" [0]
+			"int thinShadow" [1]
+			"int fixedSampleCount" [0]
+			"string lightGroup" ['']
+			"float importanceMultiplier" [1.0]
 	AttributeEnd\n\n''')
 
 		for bri in self.scene.Bricks:
@@ -497,7 +519,7 @@ Display "{0}{1}{2}.beauty.001.exr" "openexr" "Ci,a,mse,albedo,albedo_var,diffuse
 					#out.write("usemtl " + matname + '\n')
 					
 					op.write('AttributeBegin #begin Brick {0}.{1}\nAttribute "identifier" "uniform string name" ["Brick {0}.{1}"]\n'.format(written_obj, part))
-					op.write('ReadArchive "' + filename + '_Materials_Archive.zip!material_' + matname + '.rib"\n')
+					op.write('ReadArchive "{0}_Materials_Archive.zip!material_{1}.rib"\n'.format(filename, matname))
 					
 					for face in geo.Parts[part].faces:
 						op.write('\tPolygon\n')
@@ -534,8 +556,8 @@ Display "{0}{1}{2}.beauty.001.exr" "openexr" "Ci,a,mse,albedo,albedo_var,diffuse
 											op.write('\t\tTranslate {0} {1} {2}\n'.format(-1 * studs.matrix.n41 + j * 0.4 + 0.015, -1 * studs.matrix.n42 + 0.14, 1 * studs.matrix.n43 + i * -0.4 - 0)) 
 											op.write('\t\tRotate 180 0 1 0\n')
 											op.write("\t\tScale {0} {0} {0}\n".format(0.81))
-											op.write('ReadArchive "' + filename + '_Materials_Archive.zip!material_' + matname + '.rib"\n')
-											op.write('ReadArchive "' + filename + '_Bricks_Archive.zip!logoonstuds.rib"\n')
+											op.write('ReadArchive "{0}_Materials_Archive.zip!material_{1}.rib"\n'.format(filename, matname))
+											op.write('ReadArchive "{0}_Bricks_Archive.zip!logoonstuds.rib"\n'.format(filename))
 											op.write('AttributeEnd #end Brick {0}.{1} stud{2}_{3}_{4}\n\n'.format(written_obj, part, a, i, j))
 				# -----------------------------------------------------------------
 				op.close()
@@ -544,8 +566,8 @@ Display "{0}{1}{2}.beauty.001.exr" "openexr" "Ci,a,mse,albedo,albedo_var,diffuse
 				indexOffset = 1
 				textOffset = 1
 				
-				out.write('\t\tAttribute "identifier" "name" ["'+ written_obj + '"]\n')
-				out.write('\t\tReadArchive "' + filename +'_Bricks_Archive.zip!'+ written_obj + '.rib"\n')
+				out.write('\t\tAttribute "identifier" "name" ["{0}"]\n'.format(written_obj))
+				out.write('\t\tReadArchive "{0}_Bricks_Archive.zip!{1}.rib"\n'.format(filename, written_obj))
 				out.write('\tAttributeEnd\n\n')
 				
 				if not written_obj in writtenribs:
