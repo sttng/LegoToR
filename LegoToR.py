@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# LegoToR Version 0.5.0.6 - Copyright (c) 2020 by m2m
+# LegoToR Version 0.5.0.7 - Copyright (c) 2020 by m2m
 # based on pyldd2obj Version 0.4.8 - Copyright (c) 2019 by jonnysp 
 # LegoToR parses LXF files and command line parameters to create a renderman compliant rib file.
 # 
@@ -9,6 +9,7 @@
 #
 # Updates:
 #
+# 0.5.0.7 DB folder support for modifications (such as added bricks) in addition to db.lif support
 # 0.5.0.6 Seperated chrome and metallic materials. Fixed textures on chrome, metallic, transparent materials
 # 0.5.0.5 Added color linearization (Thanks to earlywill !). Corrected metal (chrome) materials. Corrected transparency with added maxspeculardepth.
 # 0.5.0.4 Implemented metallic material and updated all other materials. Added top and back light. Fixed bug of placement of groundplane. Changed groundplane mesh to be more photostudio-like.
@@ -30,7 +31,6 @@
 # 
 # License: MIT License
 #
-
 from pylddlib import *
 import numpy as np
 import uuid
@@ -40,8 +40,7 @@ import shutil
 import ParseCommandLine as cl
 import random
 
-__version__ = "0.5.0.6"
-
+__version__ = "0.5.0.7"
 compression = zipfile.ZIP_DEFLATED
 
 class Materials:
@@ -560,6 +559,13 @@ Bxdf "PxrSurface" "Solid Material {0}"
 		return bxdf_mat_str
 
 class Converter:
+	def LoadDBFolder(self, dbfolderlocation):
+		self.database = DBFolderReader(folder=dbfolderlocation)
+
+		if self.database.initok and self.database.fileexist(os.path.join(dbfolderlocation,'Materials.xml')) and self.database.fileexist(MATERIALNAMESPATH + 'EN/localizedStrings.loc'):
+			self.allMaterials = Materials(data=self.database.filelist[os.path.join(dbfolderlocation,'Materials.xml')].read());
+			self.allMaterials.setLOC(loc=LOCReader(data=self.database.filelist[MATERIALNAMESPATH + 'EN/localizedStrings.loc'].read()))
+	
 	def LoadDatabase(self,databaselocation):
 		self.database = LIFReader(file=databaselocation)
 
@@ -1083,24 +1089,41 @@ def main():
 
 	converter = Converter()
 	print("LegoToR Version " + __version__)
-	if os.path.exists(FindDatabase()):
+	if os.path.isdir(FindDBFolder()):
+		print "Found DB folder. Will use DB folder instead of db.lif!"
+		global PRIMITIVEPATH
+		global GEOMETRIEPATH
+		global DECORATIONPATH
+		global MATERIALNAMESPATH
+		setDBFolderVars(dbfolderlocation = FindDBFolder()) #Required to set in pylddlib... dirty !
+		PRIMITIVEPATH = FindDBFolder() + '/Primitives/'
+		GEOMETRIEPATH = FindDBFolder() + '/Primitives/LOD0/'
+		DECORATIONPATH = FindDBFolder() + '/Decorations/'
+		MATERIALNAMESPATH = FindDBFolder() + '/MaterialNames/'
+		converter.LoadDBFolder(dbfolderlocation = FindDBFolder())
+		converter.LoadScene(filename=lxf_filename)
+		converter.Export(filename=obj_filename)
+		
+	elif os.path.exists(FindDatabase()):
 		converter.LoadDatabase(databaselocation = FindDatabase())
 		converter.LoadScene(filename=lxf_filename)
 		converter.Export(filename=obj_filename)
 		
-		with open(obj_filename + '_Scene.rib','wb') as wfd:
-			for f in ['rib_header.rib', obj_filename + '.rib']:
-				with open(f,'rb') as fd:
-					shutil.copyfileobj(fd, wfd, 1024*1024*10)
-		os.remove(obj_filename + '.rib')
-		os.remove('rib_header.rib')
-		
-		print "\nNow start Renderman with (for preview):\n./prman -d it -t:-2 {0}{1}_Scene.rib".format(cl.args.searcharchive, os.sep + obj_filename)
-		print "Or start Renderman with (for final mode without preview):\n./prman -t:-2 -checkpoint 1m {0}{1}_Scene.rib".format(cl.args.searcharchive, os.sep + obj_filename)
-		print "\nFinally denoise the final output with:./denoise {0}{1}.beauty.001.exr\n".format(cl.args.searcharchive, os.sep + obj_filename)
-		
 	else:
 		print("No LDD database found. Please install LEGO Digital-Designer.")
+		os._exit()
+	
+	with open(obj_filename + '_Scene.rib','wb') as wfd:
+		for f in ['rib_header.rib', obj_filename + '.rib']:
+			with open(f,'rb') as fd:
+				shutil.copyfileobj(fd, wfd, 1024*1024*10)
+	os.remove(obj_filename + '.rib')
+	os.remove('rib_header.rib')
+		
+	print "\nNow start Renderman with (for preview):\n./prman -d it -t:-2 {0}{1}_Scene.rib".format(cl.args.searcharchive, os.sep + obj_filename)
+	print "Or start Renderman with (for final mode without preview):\n./prman -t:-2 -checkpoint 1m {0}{1}_Scene.rib".format(cl.args.searcharchive, os.sep + obj_filename)
+	print "\nFinally denoise the final output with:./denoise {0}{1}.beauty.001.exr\n".format(cl.args.searcharchive, os.sep + obj_filename)
+
 
 if __name__ == "__main__":
 	main()
