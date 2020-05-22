@@ -1,6 +1,9 @@
 #!/usr/bin/env python
-# pylddlib
-# based on pyldd2obj Version 0.4.8 - Copyright (c) 2019 by jonnysp 
+# pylddlib version 0.4.9
+# based on pyldd2obj version 0.4.8 - Copyright (c) 2019 by jonnysp
+#
+# Updates:
+# 0.4.9 updates to support reading extracted db.lif from db folder
 #
 # License: MIT License
 #
@@ -533,6 +536,20 @@ class DBinfo:
 		self.Version = xml.getElementsByTagName('Bricks')[0].attributes['version'].value
 		print('DB Version: ' + str(self.Version))
 
+class DBFolderFile:
+	def __init__(self, name, handle):
+		self.handle = handle
+		self.name = name
+
+	def read(self):
+		reader = open(self.handle, "rb")
+		try:
+			filecontent = reader.read()
+			reader.close()
+			return filecontent
+		finally:
+			reader.close()
+		
 class LIFFile:
 	def __init__(self, name, offset, size, handle):
 		self.handle = handle
@@ -544,6 +561,37 @@ class LIFFile:
 		self.handle.seek(self.offset, 0)
 		return self.handle.read(self.size)
 
+class DBFolderReader:
+	def __init__(self, folder):
+		self.filelist = {}
+		self.initok = False
+		self.location = folder
+		self.dbinfo = None
+		
+		try:
+			os.path.isdir(self.location)
+		except Exception as e:
+			self.initok = False
+			print("db folder read FAIL")
+			return
+		else:
+			self.parse()
+			if self.fileexist(os.path.join(self.location,'Materials.xml')) and self.fileexist(os.path.join(self.location, 'info.xml')):
+				self.dbinfo = DBinfo(data=self.filelist[os.path.join(self.location,'info.xml')].read())
+				print("db folder OK.")
+				self.initok = True
+			else:
+				print("db folder ERROR")
+				
+	def fileexist(self, filename):
+		return filename in self.filelist
+
+	def parse(self):
+		for path, subdirs, files in os.walk(self.location):
+			for name in files:
+				entryName = os.path.join(path, name)
+				self.filelist[entryName] = DBFolderFile(name=entryName, handle=entryName)
+	
 class LIFReader:
 	def __init__(self, file):
 		self.packedFilesOffset = 84
@@ -633,6 +681,12 @@ class LIFReader:
 			return int.from_bytes(self.filehandle.read(2), byteorder='big')
 
 class Converter:
+	def LoadDBFolder(self, dbfolderlocation):
+		self.database = DBFolderReader(folder=dbfolderlocation)
+		if self.database.initok and self.database.fileexist(os.path.join(dbfolderlocation,'Materials.xml')) and self.database.fileexist(MATERIALNAMESPATH + 'EN/localizedStrings.loc'):
+			self.allMaterials = Materials(data=self.database.filelist[os.path.join(dbfolderlocation,'Materials.xml')].read());
+			self.allMaterials.setLOC(loc=LOCReader(data=self.database.filelist[MATERIALNAMESPATH + 'EN/localizedStrings.loc'].read()))
+
 	def LoadDatabase(self,databaselocation):
 		self.database = LIFReader(file=databaselocation)
 
@@ -747,6 +801,22 @@ class Converter:
 		print("--- %s seconds ---" % (time.time() - start_time))
 
 
+def FindDBFolder():
+	if os.name =='posix':
+		return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'Library','Application Support','LEGO Company','LEGO Digital Designer','db'))
+	else:
+		return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'AppData','Roaming','LEGO Company','LEGO Digital Designer','db'))
+
+def setDBFolderVars(dbfolderlocation):
+	global PRIMITIVEPATH
+	global GEOMETRIEPATH
+	global DECORATIONPATH
+	global MATERIALNAMESPATH
+	PRIMITIVEPATH = dbfolderlocation + '/Primitives/'
+	GEOMETRIEPATH = dbfolderlocation + '/Primitives/LOD0/'
+	DECORATIONPATH = dbfolderlocation + '/Decorations/'
+	MATERIALNAMESPATH = dbfolderlocation + '/MaterialNames/'
+
 def FindDatabase():
 	if os.name =='posix':
 		return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'Library','Application Support','LEGO Company','LEGO Digital Designer','db.lif'))
@@ -780,7 +850,14 @@ def main():
 		return
 
 	converter = Converter()
-	if os.path.exists(FindDatabase()):
+	if os.path.isdir(FindDBFolder()):
+		print "Found DB folder. Will use this instead of db.lif!"
+		setDBFolderVars(dbfolderlocation = FindDBFolder())
+		converter.LoadDBFolder(dbfolderlocation = FindDBFolder())
+		converter.LoadScene(filename=lxf_filename)
+		converter.Export(filename=obj_filename)
+		
+	elif os.path.exists(FindDatabase()):
 		converter.LoadDatabase(databaselocation = FindDatabase())
 		converter.LoadScene(filename=lxf_filename)
 		converter.Export(filename=obj_filename)
