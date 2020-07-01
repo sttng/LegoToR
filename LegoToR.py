@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# LegoToR Version 0.5.0.8 - Copyright (c) 2020 by m2m
+# LegoToR Version 0.5.1 - Copyright (c) 2020 by m2m
 # based on pyldd2obj Version 0.4.8 - Copyright (c) 2019 by jonnysp 
 # LegoToR parses LXF files and command line parameters to create a renderman compliant rib file.
 # 
@@ -9,7 +9,9 @@
 #
 # Updates:
 #
-# 0.5.0.8 Improved custom2DField handling, adjusted logoonstuds height to accomodate new custom bricks better
+# 0.5.1   Added reading correct focus distance from lxf file camera, allowing for correct depth-of-field rendering.
+# 0.5.0.9 Fixed decorations bug, improved material assignments handling
+# 0.5.0.8 Improved custom2DField handling, adjusted logoonstuds height to better accommodate new custom bricks, fixed decorations bug, improved material assignments handling
 # 0.5.0.7 DB folder support for modifications (such as custom bricks) in addition to db.lif support
 # 0.5.0.6 Seperated chrome and metallic materials. Fixed textures on chrome, metallic, transparent materials
 # 0.5.0.5 Added color linearization (Thanks to earlywill !). Corrected metal (chrome) materials. Corrected transparency with added maxspeculardepth.
@@ -41,8 +43,9 @@ import shutil
 import ParseCommandLine as cl
 import random
 
-__version__ = "0.5.0.8"
+__version__ = '0.5.1'
 compression = zipfile.ZIP_DEFLATED
+PRMANPATH = '/Applications/Pixar/RenderManProServer-23.3/'
 
 class Materials:
 	def __init__(self, data):
@@ -567,18 +570,18 @@ class Converter:
 			self.allMaterials = Materials(data=self.database.filelist[os.path.join(dbfolderlocation,'Materials.xml')].read());
 			self.allMaterials.setLOC(loc=LOCReader(data=self.database.filelist[MATERIALNAMESPATH + 'EN/localizedStrings.loc'].read()))
 	
-	def LoadDatabase(self,databaselocation):
+	def LoadDatabase(self, databaselocation):
 		self.database = LIFReader(file=databaselocation)
 
 		if self.database.initok and self.database.fileexist('/Materials.xml') and self.database.fileexist(MATERIALNAMESPATH + 'EN/localizedStrings.loc'):
 			self.allMaterials = Materials(data=self.database.filelist['/Materials.xml'].read());
 			self.allMaterials.setLOC(loc=LOCReader(data=self.database.filelist[MATERIALNAMESPATH + 'EN/localizedStrings.loc'].read()))
 
-	def LoadScene(self,filename):
+	def LoadScene(self, filename):
 		if self.database.initok:
 			self.scene = Scene(file=filename)
 
-	def Export(self,filename):
+	def Export(self, filename):
 		invert = Matrix3D() 
 		#invert.n33 = -1 #uncomment to invert the Z-Axis
 		
@@ -602,9 +605,13 @@ class Converter:
 		useplane = cl.useplane
 		usenormal = cl.usenormal
 		uselogoonstuds = cl.uselogoonstuds
+		fstop = cl.args.fstop
+		fov =  cl.args.fov
 		
 		out.write('''# Camera Minus One
 TransformBegin
+	Projection "PxrCamera" "float fov" [25] "float fStop" [9.99999968e+37] "float focalLength" [1.3] "float focalDistance" [5.0]
+	
 	Translate 0 -2 80
 	Rotate -25 1 0 0
 	Rotate 45 0 1 0
@@ -631,6 +638,8 @@ TransformEnd\n\n''')
 			
 			out.write('''# Camera {0}
 TransformBegin
+	Projection "PxrCamera" "float fov" [{19}] "float fStop" [{20}] "float focalLength" [1.3] "float focalDistance" [{18}]
+	
 	ConcatTransform [{1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13} {14} {15} {16}]
 	Camera "Cam-{0}"
 		"float shutterOpenTime" [0]
@@ -642,7 +651,12 @@ TransformBegin
 		"float dofaspect" [1]
 		"float nearClip" [0.1]
 		"float farClip" [10000]
-TransformEnd\n'''.format(cam.refID, undoTransformMatrix.n11, undoTransformMatrix.n21, -1 * undoTransformMatrix.n31, undoTransformMatrix.n41, undoTransformMatrix.n12, undoTransformMatrix.n22,  -1 * undoTransformMatrix.n32, undoTransformMatrix.n42, -1 * undoTransformMatrix.n13, -1 * undoTransformMatrix.n23, undoTransformMatrix.n33, undoTransformMatrix.n43, undoTransformMatrix.n14, undoTransformMatrix.n24, -1 * undoTransformMatrix.n34, undoTransformMatrix.n44))
+		#"float fov" [{17}] 
+TransformEnd\n'''.format(cam.refID, undoTransformMatrix.n11, undoTransformMatrix.n21, -1 * undoTransformMatrix.n31, 
+			 undoTransformMatrix.n41, undoTransformMatrix.n12, undoTransformMatrix.n22,  -1 * undoTransformMatrix.n32, 
+			 undoTransformMatrix.n42, -1 * undoTransformMatrix.n13, -1 * undoTransformMatrix.n23, undoTransformMatrix.n33, 
+			 undoTransformMatrix.n43, undoTransformMatrix.n14, undoTransformMatrix.n24, -1 * undoTransformMatrix.n34, undoTransformMatrix.n44, 
+			 cam.fieldOfView, cam.distance, fov, fstop))
 		
 		out.write('''
 Display "{0}{1}{2}.beauty.001.exr" "openexr" "Ci,a,mse,albedo,albedo_var,diffuse,diffuse_mse,specular,specular_mse,zfiltered,zfiltered_var,normal,normal_var,forward,backward" "int asrgba" 1
@@ -785,13 +799,28 @@ Display "{0}{1}{2}.beauty.001.exr" "openexr" "Ci,a,mse,albedo,albedo_var,diffuse
 									#transform with inverted values (to undo the transformation)
 									#geo.Parts[part].outnormals[k].transformW(undoTransformMatrix)
 					
-					lddmatri = self.allMaterials.getMaterialRibyId(pa.materials[part])
-					matname = pa.materials[part]
+					#try catch here for possible problems in materials assignment of various g, g1, g2, .. files in lxf file
+					try:
+						materialCurrentPart = pa.materials[part]
+					except IndexError:
+						print('WARNING: {0}.g{1} has NO material assignment in lxf. Replaced with color 9. Fix {0}.xml faces values.'.format(pa.designID, part))
+						materialCurrentPart = '9'
+					
+					lddmatri = self.allMaterials.getMaterialRibyId(materialCurrentPart)
+					matname = materialCurrentPart
 
 					deco = '0'
 					if hasattr(pa, 'decoration') and len(geo.Parts[part].textures) > 0:
 						if decoCount <= len(pa.decoration):
-							deco = pa.decoration[decoCount]
+						#if decoCount < len(pa.decoration):
+							try:
+								deco = pa.decoration[decoCount]
+								#print 'Good DecoCount' + str(decoCount)
+								#print 'Good len' + str(len(pa.decoration))
+							except IndexError:
+								print('Error here')
+								print(decoCount)
+								print(pa.decoration)
 						decoCount += 1
 
 					extfile = ''
@@ -809,7 +838,7 @@ Display "{0}{1}{2}.beauty.001.exr" "openexr" "Ci,a,mse,albedo,albedo_var,diffuse
 									os.system(txmake_cmd)
 									os.remove(extfile)
 								else:
-									print('RMANTREE environment variable not set correctly. Set with: \nexport RMANTREE=/Applications/Pixar/RenderManProServer-23.2/\nexport PATH="$PATH:$RMANTREE/bin"')
+									print('RMANTREE environment variable not set correctly. Set with: \nexport RMANTREE={0}\nexport PATH="$PATH:$RMANTREE/bin"'.format(PRMANPATH))
 
 					if not matname in usedmaterials:
 						usedmaterials.append(matname)
@@ -999,7 +1028,7 @@ Display "{0}{1}{2}.beauty.001.exr" "openexr" "Ci,a,mse,albedo,albedo_var,diffuse
 		zfmat.close()
 		out.write('WorldEnd')
 		sys.stdout.write('%s\r' % ('                                                                                                 '))
-		print("--- %s seconds ---" % (time.time() - start_time))
+		print('--- %s seconds ---' % (time.time() - start_time))
 
 def FindRmtree():
 	if os.name =='posix':
@@ -1007,14 +1036,14 @@ def FindRmtree():
 		if rmtree is not None:
 			return str(rmtree)
 		else:
-			print('RMANTREE environment variable not set correctly. Set with: \n\nexport RMANTREE=/Applications/Pixar/RenderManProServer-23.2/\nexport PATH="$PATH:$RMANTREE/bin"\n')
+			print('RMANTREE environment variable not set correctly. Set with: \n\nexport RMANTREE={0}\nexport PATH="$PATH:$RMANTREE/bin"\n'.format(PRMANPATH))
 			exit()
 	else:
 		rmtree = os.getenv('RMANTREE')
 		if rmtree is not None:
 			return str(rmtree)
 		else:
-			print('RMANTREE environment variable not set correctly. Set with: setx RMANTREE "C:\Program Files\Pixar\RenderManProServer-23.2\" /M')
+			print('RMANTREE environment variable not set correctly. Set with: setx RMANTREE "C:\Program Files\Pixar\RenderManProServer-23.3\" /M')
 			exit()
 
 
@@ -1068,8 +1097,7 @@ DisplayChannel "normal normal_var" "string source" "normal Nn" "string statistic
 DisplayChannel "vector forward" "string source" "vector motionFore"
 DisplayChannel "vector backward" "string source" "vector motionBack"
 
-Projection "PxrCamera" "float fov" [{11}] "float fStop" [{12}] "float focalLength" [0.8] "float focalDistance" [5] "point focus1" [0.0 0.0 -1] "point focus2" [1 0.0 -1] "point focus3" [1 1 -1]
-'''.format(__version__, datetime.datetime.now(), str(searcharchive) + os.sep, FindRmtree(), str(searchtexture) + os.sep, pixelvar, width, height, '.' + os.sep + str(infile), integrator, srate, fov, fstop)
+'''.format(__version__, datetime.datetime.now(), str(searcharchive) + os.sep, FindRmtree(), str(searchtexture) + os.sep, pixelvar, width, height, '.' + os.sep + str(infile), integrator, srate)
 
 	with open('rib_header.rib', 'w') as file_writer:
 		file_writer.write(rib_header)
@@ -1089,9 +1117,9 @@ def main():
 		os.remove(obj_filename + "_Bricks_Archive.zip")
 
 	converter = Converter()
-	print("LegoToR Version " + __version__)
+	print('LegoToR Version ' + __version__)
 	if os.path.isdir(FindDBFolder()):
-		print "Found DB folder. Will use DB folder instead of db.lif!"
+		print('Found DB folder. Will use DB folder instead of db.lif file!')
 		global PRIMITIVEPATH
 		global GEOMETRIEPATH
 		global DECORATIONPATH
@@ -1102,17 +1130,16 @@ def main():
 		DECORATIONPATH = FindDBFolder() + '/Decorations/'
 		MATERIALNAMESPATH = FindDBFolder() + '/MaterialNames/'
 		converter.LoadDBFolder(dbfolderlocation = FindDBFolder())
-		converter.LoadScene(filename=lxf_filename)
-		converter.Export(filename=obj_filename)
 		
 	elif os.path.exists(FindDatabase()):
 		converter.LoadDatabase(databaselocation = FindDatabase())
-		converter.LoadScene(filename=lxf_filename)
-		converter.Export(filename=obj_filename)
 		
 	else:
-		print("No LDD database found. Please install LEGO Digital-Designer.")
+		print('No LDD database found. Please install LEGO Digital-Designer.')
 		os._exit()
+	
+	converter.LoadScene(filename=lxf_filename)
+	converter.Export(filename=obj_filename)
 	
 	with open(obj_filename + '_Scene.rib','wb') as wfd:
 		for f in ['rib_header.rib', obj_filename + '.rib']:
@@ -1121,9 +1148,9 @@ def main():
 	os.remove(obj_filename + '.rib')
 	os.remove('rib_header.rib')
 		
-	print "\nNow start Renderman with (for preview):\n./prman -d it -t:-2 {0}{1}_Scene.rib".format(cl.args.searcharchive, os.sep + obj_filename)
-	print "Or start Renderman with (for final mode without preview):\n./prman -t:-2 -checkpoint 1m {0}{1}_Scene.rib".format(cl.args.searcharchive, os.sep + obj_filename)
-	print "\nFinally denoise the final output with:./denoise {0}{1}.beauty.001.exr\n".format(cl.args.searcharchive, os.sep + obj_filename)
+	print('\nNow start Renderman with (for preview):\n  prman -d it -t:-2 {0}{1}_Scene.rib'.format(cl.args.searcharchive, os.sep + obj_filename))
+	print('Or start Renderman with (for final mode without preview):\n  prman -t:-2 -checkpoint 1m {0}{1}_Scene.rib'.format(cl.args.searcharchive, os.sep + obj_filename))
+	print('\nFinally denoise the final output with:  denoise {0}{1}.beauty.001.exr\n'.format(cl.args.searcharchive, os.sep + obj_filename))
 
 
 if __name__ == "__main__":
