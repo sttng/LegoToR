@@ -8,7 +8,7 @@
 * Python (tested on Python 2.7.10)
 * LDD
 * macOS (tested on macOS 10.14, but Windows & Linux may work with small modifications)
-* Pixar RenderMan (tested on RenderMan 22.3 - 23.3)
+* Pixar RenderMan (tested on RenderMan 22.3 - 23.4)
 
 ## LegoToR
 
