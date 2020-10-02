@@ -6,7 +6,7 @@
 ### Requirements
 
 * Python (tested on Python 2.7.10)
-* LDD
+* LDD 4.3.11
 * macOS (tested on macOS 10.14, but Windows & Linux may work with small modifications)
 * Pixar RenderMan (tested on RenderMan 22.3 - 23.4)
 
