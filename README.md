@@ -5,14 +5,16 @@
 
 ### Requirements
 
-* Python (tested on Python 2.7.10)
+* Python (tested on Python 2.7.10 on macOS and Python 3.8 on Windows 10)
 * LDD 4.3.11
-* macOS (tested on macOS 10.14, but Windows & Linux may work with small modifications)
+* macOS (tested on macOS 10.14) or Windows 10 (Linux may work with small modifications)
 * Pixar RenderMan (tested on RenderMan 22.3 - 23.4)
 
 ## LegoToR
 
 ### Usage
+
+**on Windows LDD must be closed, otherwise the tools can not read the db.lif file**
 
 #### Simple Usage
 
