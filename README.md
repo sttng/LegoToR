@@ -14,7 +14,7 @@
 
 ### Usage
 
-**on Windows LDD must be closed, otherwise the tools can not read the db.lif file**
+* **on Windows LDD must be closed, otherwise the tool can not read the db.lif file**
 
 #### Simple Usage
 
@@ -72,6 +72,8 @@ optional arguments:
 ## LegoToRHD
 
 ### Usage
+
+* **on Windows LDD must be closed, otherwise the tool can not read the db.lif file**
 
 #### Simple Usage
 
