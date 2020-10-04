@@ -3,6 +3,8 @@
 
 **LegoToRHD** is a LEGO Digital Designer (LDD) to Universal Scene Descriptor (USD) converter. LegoToRHD takes a LDD lxf file as input and converts it into a set of USD compliant files. USD is used by Apple's ARKit and in a multitude of other professional applications from Pixar, Autodesk, etc.
 
+Both LegoToR & LegoToRHD rely on **pylddlib**. pylddlib can also be used stand-alone, in that case it will export an obj file of the provided LDD lxf file.
+
 ### Requirements
 
 * Python (tested on Python 2.7.10 on macOS and Python 3.8.3 on Windows 10)
