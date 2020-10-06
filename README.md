@@ -7,7 +7,7 @@ Both LegoToR & LegoToRHD rely on **pylddlib**. pylddlib can also be used stand-a
 
 ### Requirements
 
-* Python (tested on Python 2.7.10 on macOS and Python 3.8.3 on Windows 10)
+* Python (tested with Python 2.7.10 on macOS and Python 3.8.3 on Windows 10)
 * LDD 4.3.11
 * macOS (tested on macOS 10.14) or Windows 10 (Linux may work with small modifications)
 * Pixar RenderMan (tested on RenderMan 22.3 - 23.4)
