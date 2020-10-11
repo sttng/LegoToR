@@ -69,6 +69,7 @@ optional arguments:
   -np, --noplane        disable ground plane. Useful for space ships!
   -nn, --nonormals      disable writing of normals, as some normals in LDD may have problems
   -nl, --nologo         disable logo on studs
+  -nc, --nocsv          disable reading of color values from csv file. Use LDD built-in colors instead
 ```
 
 ## LegoToRHD
@@ -97,6 +98,7 @@ optional arguments:
   -np, --noplane        disable ground plane. Useful for space ships!
   -nn, --nonormals      disable writing of normals, as some normals in LDD may have problems
   -nl, --nologo         disable logo on studs
+  -nc, --nocsv          disable reading of color values from csv file. Use LDD built-in colors instead
 ```
 
 # Credits
