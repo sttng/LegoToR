@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 #
-# LegoToRHD Version 0.5.2.1 - Copyright (c) 2020 by m2m
+# LegoToRHD Version 0.5.3 - Copyright (c) 2020 by m2m
 # based on pyldd2obj Version 0.4.8 - Copyright (c) 2019 by jonnysp 
 # LegoToRHD parses LXF files and command line parameters to create USDA compliant files.
 # 
 # Usage: ./LegoToRHD.py /Users/username/Documents/LEGO\ Creations/Models/mylxffile.lxf -np
 #
 # Updates:
+# 0.5.3 improved brick-seams generation
 # 0.5.2.1 corrected Windows path handling bugs
 # 0.5.2 improved Windows and Python 3 compatibility
 # 0.5.1 added reading correct focus distance from lxf file camera
@@ -41,7 +42,7 @@ import shutil
 import ParseCommandLine as cl
 import random
 
-__version__ = "0.5.2.1"
+__version__ = "0.5.3"
 
 compression = zipfile.ZIP_STORED #uncompressed archive for USDZ, otherwise would use ZIP_DEFLATED, the usual zip compression
 
@@ -371,8 +372,11 @@ class Converter:
 				
 				if not (len(pa.Bones) > flexflag):
 				# Flex parts don't need to be moved
-					out.write('\t\t\tmatrix4d xformOp:transform = ( ({0}, {1}, {2}, {3}), ({4}, {5}, {6}, {7}), ({8}, {9}, {10}, {11}), ({12}, {13}, {14}, {15}) )\n'.format(n11, n12, n13, n14, n21, n22, n23, n24, n31, n32, n33, n34, n41, n42 ,n43, n44))	
-					out.write('\t\t\tdouble3 xformOp:scale = ({0}, {0}, {0})\n'.format(random.uniform(0.995, 1.000)))
+					out.write('\t\t\tmatrix4d xformOp:transform = ( ({0}, {1}, {2}, {3}), ({4}, {5}, {6}, {7}), ({8}, {9}, {10}, {11}), ({12}, {13}, {14}, {15}) )\n'.format(n11, n12, n13, n14, n21, n22, n23, n24, n31, n32, n33, n34, n41, n42 ,n43, n44))
+					# Random Scale for brick seams
+					scalefact = (geo.maxGeoBounding - 0.025 * random.uniform(0.0, 1.000)) / geo.maxGeoBounding
+					#out.write('\t\t\tdouble3 xformOp:scale = ({0}, {0}, {0})\n'.format(random.uniform(0.995, 1.000)))
+					out.write('\t\t\tdouble3 xformOp:scale = ({0}, {0}, {0})\n'.format(scalefact))
 					out.write('\t\t\tuniform token[] xformOpOrder = ["xformOp:transform", "xformOp:scale"]\n')
 					
 					# miny used for floor plane later

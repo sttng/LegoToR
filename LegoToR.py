@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 #
-# LegoToR Version 0.5.2.1 - Copyright (c) 2020 by m2m
+# LegoToR Version 0.5.3 - Copyright (c) 2020 by m2m
 # based on pyldd2obj Version 0.4.8 - Copyright (c) 2019 by jonnysp 
 # LegoToR parses LXF files and command line parameters to create a renderman compliant rib file.
 # 
 # Usage: ./LegoToR.py /Users/username/Documents/LEGO\ Creations/Models/mylxffile.lxf -v -np
 #
 # Updates:
+# 0.5.3 improved brick-seams generation
 # 0.5.2.1 corrected Windows path handling bugs
 # 0.5.2 improved Windows and Python 3 compatibility
 # 0.5.1.2 Support new lego colors added in the latest LDD mod.
@@ -47,7 +48,7 @@ import ParseCommandLine as cl
 import random
 import posixpath
 
-__version__ = '0.5.2.1'
+__version__ = '0.5.3'
 compression = zipfile.ZIP_DEFLATED
 PRMANPATH = '/Applications/Pixar/RenderManProServer-23.4/'
 PRMANDIR = os.path.basename(os.path.normpath(PRMANPATH))
@@ -787,7 +788,8 @@ Display "{0}{1}{2}.beauty.001.exr" "openexr" "Ci,a,mse,albedo,albedo_var,diffuse
 				# Renderman is lefthanded coordinate system, but LDD is right handed.
 					out.write("\t\tConcatTransform [{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13} {14} {15}]\n".format(n11, n12, -1 * n13, n14, n21, n22, -1 * n23, n24, -1 * n31, -1 * n32, n33, n34, n41, n42 ,-1 * n43, n44))
 					# Random Scale for brick seams
-					out.write("\t\tScale {0} {0} {0}\n".format(random.uniform(0.9925, 1.000)))
+					scalefact = (geo.maxGeoBounding - 0.025 * random.uniform(0.0, 1.000)) / geo.maxGeoBounding
+					out.write("\t\tScale {0} {0} {0}\n".format(scalefact))
 					
 					# miny used for floor plane later
 					if miny > float(n42):
