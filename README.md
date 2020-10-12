@@ -8,7 +8,7 @@ Both LegoToR & LegoToRHD rely on **pylddlib**. pylddlib.py can be used stand-alo
 ### Requirements
 
 * Python (tested with Python 2.7.10 on macOS and Python 3.8.3 on Windows 10)
-* LDD 4.3.11 (see here https://www.eurobricks.com/forum/index.php?/forums/topic/149308-lego-digital-designer-install-problem/ on how to get LDD 4.3.11 on Windows)
+* LDD 4.3.11 (see https://www.eurobricks.com/forum/index.php?/forums/topic/149308-lego-digital-designer-install-problem/ on how to get LDD 4.3.11 for Windows)
 * macOS (tested on macOS 10.14) or Windows 10 (Linux may work with small modifications)
 * Pixar RenderMan (tested on RenderMan 22.3 - 23.4)
 
