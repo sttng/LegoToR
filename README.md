@@ -16,7 +16,7 @@ Both LegoToR & LegoToRHD rely on **pylddlib**. pylddlib.py can be used stand-alo
 
 ### Usage
 
-* **on Windows LDD must be closed, otherwise the tool can not read the db.lif file**
+* **on Windows LDD must be closed, otherwise the tool can not read the db.lif file !**
 
 #### Simple Usage
 
@@ -76,7 +76,7 @@ optional arguments:
 
 ### Usage
 
-* **on Windows LDD must be closed, otherwise the tool can not read the db.lif file**
+* **on Windows LDD must be closed, otherwise the tool can not read the db.lif file !**
 
 #### Simple Usage
 
