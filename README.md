@@ -24,7 +24,7 @@ Both LegoToR & LegoToRHD rely on **pylddlib**. pylddlib.py can be used stand-alo
 #### Simple Usage
 
 ```
-/LegoToR.py myLDDinputfile.lxf -v -cam 0
+./LegoToR.py myLDDinputfile.lxf -v -cam 0
 ```
 
 #### Detailed Usage
@@ -72,7 +72,7 @@ optional arguments:
   -np, --noplane        disable ground plane. Useful for space ships!
   -nn, --nonormals      disable writing of normals, as some normals in LDD may have problems
   -nl, --nologo         disable logo on studs
-  -nc, --nocsv          disable reading of color values from csv file. Use LDD built-in colors instead
+  -nc, --nocsv          disable reading of color values from csv file. Use LDD's built-in colors instead
 ```
 
 ## LegoToRHD
@@ -84,7 +84,7 @@ optional arguments:
 #### Simple Usage
 
 ```
-/LegoToRHD.py myLDDinputfile.lxf -np
+./LegoToRHD.py myLDDinputfile.lxf -np
 ```
 
 #### Detailed Usage
@@ -101,7 +101,7 @@ optional arguments:
   -np, --noplane        disable ground plane. Useful for space ships!
   -nn, --nonormals      disable writing of normals, as some normals in LDD may have problems
   -nl, --nologo         disable logo on studs
-  -nc, --nocsv          disable reading of color values from csv file. Use LDD built-in colors instead
+  -nc, --nocsv          disable reading of color values from csv file. Use LDD's built-in colors instead
 ```
 
 # Credits
