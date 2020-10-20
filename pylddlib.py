@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-# pylddlib version 0.4.9.5
+# pylddlib version 0.4.9.7
 # based on pyldd2obj version 0.4.8 - Copyright (c) 2019 by jonnysp
 #
 # Updates:
-# 0.4.9.7 corrected bug in incorrecting parsing of primitive xml file, when it contains comments.
+# 0.4.9.7 corrected bug in incorrect parsing of primitive xml file, specifically comments. Add support LDDLIFTREE env var to set location of db.lif.
 # 0.4.9.6 preliminary Linux support
-# 0.4.9.5 corrected bug in incorrecting Bounding / GeometryBounding parsing of primitive xml file.
+# 0.4.9.5 corrected bug in incorrect Bounding / GeometryBounding parsing of primitive xml file.
 # 0.4.9.4 improved lif.db checking for crucial files (because of the infamous botched 4.3.12 LDD Windows update).
 # 0.4.9.3 improved Windows and Python 3 compatibility
 # 0.4.9.2 changed handling of material = 0 for a part. Now a 0 will choose the 1st material (the base material of a part) and not the previous material of the subpart before. This will fix "Chicken Helmet Part 11262". It may break other parts and this change needs further regression.
@@ -432,6 +432,21 @@ class Field2D:
 	def __str__(self):
 		return '[type="{0}" transform="{1}" custom2DField="{2}"]'.format(self.type, self.matrix, self.custom2DField)
 
+class CollisionBox:
+	def __init__(self, sX=0, sY=0, sZ=0, angle=0, ax=0, ay=0, az=0, tx=0, ty=0, tz=0):
+		rotationMatrix = Matrix3D()
+		rotationMatrix.rotate(angle = -angle * math.pi / 180.0, axis = Point3D(x=ax,y=ay,z=az))
+		p = Point3D(x=tx,y=ty,z=tz)
+		p.transformW(rotationMatrix)
+		rotationMatrix.n41 -= p.x
+		rotationMatrix.n42 -= p.y
+		rotationMatrix.n43 -= p.z
+		self.matrix = rotationMatrix
+		self.corner = Point3D(x=sX,y=sY,z=sZ)
+	
+	def __str__(self):
+		return '[0,0,0] [{0},0,0] [0,{1},0] [{0},{1},0] [0,0,{2}] [0,{1},{2}] [{0},0,{2}] [{0},{1},{2}]'.format(self.x, self.y,self.z)
+
 class Primitive:
 	def __init__(self, data):
 		self.Designname = ''
@@ -441,9 +456,10 @@ class Primitive:
 		self.Bounding = {}
 		self.GeometryBounding = {}
 		xml = minidom.parseString(data)
-		#print(xml.firstChild.__class__.__name__.lower() )
 		root = xml.documentElement
-		for node in root.childNodes:  #for node in xml.firstChild.childNodes:
+		for node in root.childNodes:
+			if node.__class__.__name__.lower() == 'comment':
+				self.comment = node[0].nodeValue
 			if node.nodeName == 'Flex': 
 				for node in node.childNodes:
 					if node.nodeName == 'Bone':
@@ -453,10 +469,7 @@ class Primitive:
 					if childnode.nodeName == 'Annotation' and childnode.hasAttribute('designname'):
 						self.Designname = childnode.getAttribute('designname')
 			elif node.nodeName == 'PhysicsAttributes':
-				self.PhysicsAttributes = {"inertiaTensor": node.getAttribute('inertiaTensor')}
-				self.PhysicsAttributes = {"centerOfMass": node.getAttribute('centerOfMass')}
-				self.PhysicsAttributes = {"mass": node.getAttribute('mass')}
-				self.PhysicsAttributes = {"frictionType": node.getAttribute('frictionType')}
+				self.PhysicsAttributes = {"inertiaTensor": node.getAttribute('inertiaTensor'),"centerOfMass": node.getAttribute('centerOfMass'),"mass": node.getAttribute('mass'),"frictionType": node.getAttribute('frictionType')}
 			elif node.nodeName == 'Bounding':
 				for childnode in node.childNodes:
 					if childnode.nodeName == 'AABB':
@@ -469,6 +482,8 @@ class Primitive:
 				for childnode in node.childNodes:
 					if childnode.nodeName == 'Custom2DField':
 						self.Fields2D.append(Field2D(type=int(childnode.getAttribute('type')), width=int(childnode.getAttribute('width')), height=int(childnode.getAttribute('height')), angle=float(childnode.getAttribute('angle')), ax=float(childnode.getAttribute('ax')), ay=float(childnode.getAttribute('ay')), az=float(childnode.getAttribute('az')), tx=float(childnode.getAttribute('tx')), ty=float(childnode.getAttribute('ty')), tz=float(childnode.getAttribute('tz')), field2DRawData=str(childnode.firstChild.data)))
+			elif node.nodeName == 'Decoration':
+				self.Decoration = {"faces": node.getAttribute('faces'), "subMaterialRedirectLookupTable": node.getAttribute('subMaterialRedirectLookupTable')}
 
 class LOCReader:
 	def __init__(self, data):
@@ -818,17 +833,6 @@ class Converter:
 		sys.stdout.write('%s\r' % ('                                                                                                 '))
 		print("--- %s seconds ---" % (time.time() - start_time))
 
-
-def FindDBFolder():
-	if platform.system() == 'Darwin':
-		return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'Library','Application Support','LEGO Company','LEGO Digital Designer','db'))
-	elif platform.system() == 'Windows':
-		return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'AppData','Roaming','LEGO Company','LEGO Digital Designer','db'))
-	elif platform.system() == 'Linux':
-		return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'.wine','drive_c','users',os.getenv('USER'),'Application Data','LEGO Company','LEGO Digital Designer','db'))
-	else:
-		print('Your OS {0} is not supported yet.'.format(platform.system()))
-
 def setDBFolderVars(dbfolderlocation):
 	global PRIMITIVEPATH
 	global GEOMETRIEPATH
@@ -840,14 +844,41 @@ def setDBFolderVars(dbfolderlocation):
 	MATERIALNAMESPATH = dbfolderlocation + '/MaterialNames/'
 
 def FindDatabase():
-	if platform.system() == 'Darwin':
-		return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'Library','Application Support','LEGO Company','LEGO Digital Designer','db.lif'))
-	elif platform.system() == 'Windows':
-		return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'AppData','Roaming','LEGO Company','LEGO Digital Designer','db.lif'))
-	elif platform.system() == 'Linux':
-		return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'.wine','drive_c','users',os.getenv('USER'),'Application Data','LEGO Company','LEGO Digital Designer','db.lif'))
-	else:
-		print('Your OS {0} is not supported yet.'.format(platform.system()))
+	lddliftree = os.getenv('LDDLIFTREE')
+	if lddliftree is not None:
+		if os.path.isdir(str(lddliftree)): #LDDLIFTREE points to folder
+			return str(lddliftree)
+		elif os.path.isfile(str(lddliftree)): #LDDLIFTREE points to file (should be db.lif)
+			return str(lddliftree)
+	
+	else: #Env variable LDDLIFTREE not set. Check for default locations per different platform.
+		if platform.system() == 'Darwin':
+			if os.path.isdir(str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'Library','Application Support','LEGO Company','LEGO Digital Designer','db'))):
+				return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'Library','Application Support','LEGO Company','LEGO Digital Designer','db'))
+			elif os.path.isfile(str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'Library','Application Support','LEGO Company','LEGO Digital Designer','db.lif'))):
+				return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'Library','Application Support','LEGO Company','LEGO Digital Designer','db.lif'))
+			else:
+				print("no LDD database found please install LEGO-Digital-Designer")
+				os._exit()
+		elif platform.system() == 'Windows':
+			if os.path.isdir(str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'AppData','Roaming','LEGO Company','LEGO Digital Designer','db'))):
+				return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'AppData','Roaming','LEGO Company','LEGO Digital Designer','db'))
+			elif os.path.isfile(str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'AppData','Roaming','LEGO Company','LEGO Digital Designer','db.lif'))):
+				return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'AppData','Roaming','LEGO Company','LEGO Digital Designer','db.lif'))
+			else:
+				print("no LDD database found please install LEGO-Digital-Designer")
+				os._exit()
+		elif platform.system() == 'Linux':
+			if os.path.isdir(str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'.wine','drive_c','users',os.getenv('USER'),'Application Data','LEGO Company','LEGO Digital Designer','db'))):
+				return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'.wine','drive_c','users',os.getenv('USER'),'Application Data','LEGO Company','LEGO Digital Designer','db'))
+			elif os.path.isfile(str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'.wine','drive_c','users',os.getenv('USER'),'Application Data','LEGO Company','LEGO Digital Designer','db.lif'))):
+				return str(os.path.join(str(os.getenv('USERPROFILE') or os.getenv('HOME')),'.wine','drive_c','users',os.getenv('USER'),'Application Data','LEGO Company','LEGO Digital Designer','db.lif'))
+			else:
+				print("no LDD database found please install LEGO-Digital-Designer")
+				os._exit()
+		else:
+			print('Your OS {0} is not supported yet.'.format(platform.system()))
+			os._exit()
 	
 def progress(count, total, status='', suffix = ''):
 	bar_len = 40
@@ -876,14 +907,14 @@ def main():
 		return
 
 	converter = Converter()
-	if os.path.isdir(FindDBFolder()):
+	if os.path.isdir(FindDatabase()):
 		print("Found DB folder. Will use this instead of db.lif!")
-		setDBFolderVars(dbfolderlocation = FindDBFolder())
-		converter.LoadDBFolder(dbfolderlocation = FindDBFolder())
+		setDBFolderVars(dbfolderlocation = FindDatabase())
+		converter.LoadDBFolder(dbfolderlocation = FindDatabase())
 		converter.LoadScene(filename=lxf_filename)
 		converter.Export(filename=obj_filename)
 		
-	elif os.path.exists(FindDatabase()):
+	elif os.path.isfile(FindDatabase()):
 		converter.LoadDatabase(databaselocation = FindDatabase())
 		converter.LoadScene(filename=lxf_filename)
 		converter.Export(filename=obj_filename)
