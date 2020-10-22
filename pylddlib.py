@@ -333,8 +333,7 @@ class Geometry:
 	def __init__(self, designID, database):
 		self.designID = designID
 		self.Parts = {} 
-		self.maxGeoBounding = -1
-		
+		self.maxGeoBounding = -1	
 		self.studsFields2D = []
 		
 		GeometryLocation = '{0}{1}{2}'.format(GEOMETRIEPATH, designID,'.g')
@@ -353,8 +352,7 @@ class Geometry:
 			self.maxGeoBounding = geoBoundingList[-1]
 		except KeyError as e:
 			print('\nBounding errror in part {0}: {1}\n'.format(designID, e))
-		
-			
+					
 		# preflex
 		for part in self.Parts:
 			# transform
@@ -417,11 +415,10 @@ class Field2D:
 		cols_count = width + 1
 		# creation looks reverse
 		# create an array of "cols_count" cols, for each of the "rows_count" rows
-		#	all elements are initialized to 0
+		# all elements are initialized to 0
 		self.custom2DField = [[0 for j in range(cols_count)] for i in range(rows_count)]
 		custom2DFieldString = field2DRawData.replace('\r', '').replace('\n', '').replace(' ', '')
 		custom2DFieldArr = custom2DFieldString.strip().split(',')
-		#custom2DFieldArr = [item.strip() for item in custom2DFieldArr]
 		
 		k = 0
 		for i in range(rows_count):
@@ -443,9 +440,19 @@ class CollisionBox:
 		rotationMatrix.n43 -= p.z
 		self.matrix = rotationMatrix
 		self.corner = Point3D(x=sX,y=sY,z=sZ)
+		self.positions = []
+		
+		self.positions.append(Point3D(x=0, y=0, z=0))
+		self.positions.append(Point3D(x=sX, y=0, z=0))
+		self.positions.append(Point3D(x=0, y=sY, z=0))
+		self.positions.append(Point3D(x=sX, y=sY, z=0))
+		self.positions.append(Point3D(x=0, y=0, z=sZ))
+		self.positions.append(Point3D(x=0, y=sY, z=sZ))
+		self.positions.append(Point3D(x=sX ,y=0, z=sZ))
+		self.positions.append(Point3D(x=sX ,y=sY, z=sZ))
 	
 	def __str__(self):
-		return '[0,0,0] [{0},0,0] [0,{1},0] [{0},{1},0] [0,0,{2}] [0,{1},{2}] [{0},0,{2}] [{0},{1},{2}]'.format(self.x, self.y,self.z)
+		return '[0,0,0] [{0},0,0] [0,{1},0] [{0},{1},0] [0,0,{2}] [0,{1},{2}] [{0},0,{2}] [{0},{1},{2}]'.format(sX, sY, sZ)
 
 class Primitive:
 	def __init__(self, data):
