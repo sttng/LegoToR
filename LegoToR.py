@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 #
-# LegoToR Version 0.5.3.6 - Copyright (c) 2020 by m2m
+# LegoToR Version 0.5.3.7 - Copyright (c) 2020 by m2m
 # based on pyldd2obj Version 0.4.8 - Copyright (c) 2019 by jonnysp 
 # LegoToR parses LXF files and command line parameters to create a renderman compliant rib file.
 # 
 # Usage: ./LegoToR.py /Users/username/Documents/LEGO\ Creations/Models/mylxffile.lxf -v -np
 #
 # Updates:
+# 0.5.3.7 Improved LDD material handling
 # 0.5.3.6 Corrected bug in incorrect parsing of primitive xml file, specifically comments. Add support LDDLIFTREE env var to set location of db.lif. Adjusted logoonstuds to be slightly higher
 # 0.5.3.5 Preliminary Linux support
 # 0.5.3 Improved brick-seams generation. Implement nocsv switch (-nc) to ignore using csv colors and use LDD build-in colors instead
@@ -50,7 +51,7 @@ import ParseCommandLine as cl
 import random
 import posixpath
 
-__version__ = '0.5.3.6'
+__version__ = '0.5.3.7'
 compression = zipfile.ZIP_DEFLATED
 PRMANPATH = '/Applications/Pixar/RenderManProServer-23.5/'
 PRMANDIR = os.path.basename(os.path.normpath(PRMANPATH))
@@ -74,7 +75,12 @@ class Materials:
 					self.MaterialsRi[node.getAttribute('MatID')] = MaterialRi(materialId=node.getAttribute('MatID'), r=int(material_id_dict[node.getAttribute('MatID')][0]), g=int(material_id_dict[node.getAttribute('MatID')][1]), b=int(material_id_dict[node.getAttribute('MatID')][2]), materialType=str(material_id_dict[node.getAttribute('MatID')][3]))
 				elif usecsvcolors == False:
 					#print('Using colors from LDD')
-					self.MaterialsRi[node.getAttribute('MatID')] = MaterialRi(materialId=node.getAttribute('MatID'),r=int(node.getAttribute('Red')), g=int(node.getAttribute('Green')), b=int(node.getAttribute('Blue')), materialType=str(material_id_dict[node.getAttribute('MatID')][3]))
+					materialType = "Solid"
+					if str(node.getAttribute('MaterialType')) == "shinySteel":
+						materialType = "Metallic"
+					if int(node.getAttribute('Alpha')) < 255:
+						materialType = "Transparent"
+					self.MaterialsRi[node.getAttribute('MatID')] = MaterialRi(materialId=node.getAttribute('MatID'),r=int(node.getAttribute('Red')), g=int(node.getAttribute('Green')), b=int(node.getAttribute('Blue')), materialType=materialType)
 
 	def setLOC(self, loc):
 		for key in loc.values:

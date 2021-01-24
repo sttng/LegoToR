@@ -7,8 +7,8 @@
 # Usage: ./LegoToRHD.py /Users/username/Documents/LEGO\ Creations/Models/mylxffile.lxf -np
 #
 # Updates:
-# 0.5.3.7 improved Windows compatibility
-# 0.5.3.6 corrected bug in incorrect parsing of primitive xml file, specifically comments. Add support LDDLIFTREE env var to set location of db.lif.
+# 0.5.3.7 Improved Windows compatibility. Improved LDD material handling
+# 0.5.3.6 Corrected bug in incorrect parsing of primitive xml file, specifically comments. Add support LDDLIFTREE env var to set location of db.lif.
 # 0.5.3.5 Preliminary Linux support
 # 0.5.3 improved brick-seams generation. Implement nocsv switch (-nc) to ignore using csv colors and use LDD build-in colors instead
 # 0.5.2.1 corrected Windows path handling bugs
@@ -65,8 +65,12 @@ class Materials:
 				if usecsvcolors == True:
 					self.MaterialsRi[node.getAttribute('MatID')] = MaterialRi(materialId=node.getAttribute('MatID'), r=int(material_id_dict[node.getAttribute('MatID')][0]), g=int(material_id_dict[node.getAttribute('MatID')][1]), b=int(material_id_dict[node.getAttribute('MatID')][2]), materialType=str(material_id_dict[node.getAttribute('MatID')][3]))
 				elif usecsvcolors == False:
-					
-					self.MaterialsRi[node.getAttribute('MatID')] = MaterialRi(materialId=node.getAttribute('MatID'),r=int(node.getAttribute('Red')), g=int(node.getAttribute('Green')), b=int(node.getAttribute('Blue')), materialType=str(material_id_dict[node.getAttribute('MatID')][3]))
+					materialType = "Solid"
+					if str(node.getAttribute('MaterialType')) == "shinySteel":
+						materialType = "Metallic"
+					if int(node.getAttribute('Alpha')) < 255:
+						materialType = "Transparent"
+					self.MaterialsRi[node.getAttribute('MatID')] = MaterialRi(materialId=node.getAttribute('MatID'),r=int(node.getAttribute('Red')), g=int(node.getAttribute('Green')), b=int(node.getAttribute('Blue')), materialType=materialType)
 	
 	def setLOC(self, loc):
 		for key in loc.values:
