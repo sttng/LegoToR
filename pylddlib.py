@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-# pylddlib version 0.4.9.7
+# pylddlib version 0.4.9.8
 # based on pyldd2obj version 0.4.8 - Copyright (c) 2019 by jonnysp
 #
 # Updates:
+# 0.4.9.8 further Windows compatibility improvements
 # 0.4.9.7 corrected bug of incorrectly parsing the primitive xml file, specifically with comments. Add support LDDLIFTREE envirnment variable to set location of db.lif.
 # 0.4.9.6 preliminary Linux support
 # 0.4.9.5 corrected bug of incorrectly Bounding / GeometryBounding parsing the primitive xml file.
@@ -342,7 +343,7 @@ class Geometry:
 			self.Parts[GeometryCount] = GeometryReader(data=database.filelist[GeometryLocation].read())
 			GeometryCount += 1
 			GeometryLocation = '{0}{1}{2}{3}'.format(GEOMETRIEPATH, designID,'.g',GeometryCount)
-
+		
 		primitive = Primitive(data = database.filelist[PRIMITIVEPATH + designID + '.xml'].read())
 		self.Partname = primitive.Designname
 		self.studsFields2D = primitive.Fields2D
@@ -614,12 +615,19 @@ class DBFolderReader:
 			return
 		else:
 			self.parse()
-			if self.fileexist(os.path.join(self.location,'Materials.xml')) and self.fileexist(os.path.join(self.location, 'info.xml')) and self.fileexist(os.path.join(self.location, MATERIALNAMESPATH, 'EN/localizedStrings.loc')):
+			if self.fileexist(os.path.join(self.location,'Materials.xml')) and self.fileexist(os.path.join(self.location, 'info.xml')) and self.fileexist(os.path.join(self.location, MATERIALNAMESPATH, 'EN', 'localizedStrings.loc')):
 				self.dbinfo = DBinfo(data=self.filelist[os.path.join(self.location,'info.xml')].read())
 				print("DB folder OK.")
 				self.initok = True
 			else:
 				print("DB folder ERROR")
+				print(os.path.join(self.location,'Materials.xml'))
+				print(self.fileexist(os.path.join(self.location,'Materials.xml')))
+				print(os.path.join(self.location,'info.xml'))
+				print(self.fileexist(os.path.join(self.location, 'info.xml')))
+				print(MATERIALNAMESPATH)
+				print(os.path.join(self.location, MATERIALNAMESPATH, 'EN', 'localizedStrings.loc'))
+				print(self.fileexist(os.path.join(self.location, MATERIALNAMESPATH, 'EN', 'localizedStrings.loc')))
 				
 	def fileexist(self, filename):
 		return filename in self.filelist
@@ -721,9 +729,9 @@ class LIFReader:
 class Converter:
 	def LoadDBFolder(self, dbfolderlocation):
 		self.database = DBFolderReader(folder=dbfolderlocation)
-		if self.database.initok and self.database.fileexist(os.path.join(dbfolderlocation,'Materials.xml')) and self.database.fileexist(MATERIALNAMESPATH + 'EN/localizedStrings.loc'):
+		if self.database.initok and self.database.fileexist(os.path.join(dbfolderlocation,'Materials.xml')) and self.database.fileexist(os.path.join(MATERIALNAMESPATH, 'EN', 'localizedStrings.loc')):
 			self.allMaterials = Materials(data=self.database.filelist[os.path.join(dbfolderlocation,'Materials.xml')].read());
-			self.allMaterials.setLOC(loc=LOCReader(data=self.database.filelist[MATERIALNAMESPATH + 'EN/localizedStrings.loc'].read()))
+			self.allMaterials.setLOC(loc=LOCReader(data=self.database.filelist[os.path.join(MATERIALNAMESPATH, 'EN', 'localizedStrings.loc')].read()))
 
 	def LoadDatabase(self,databaselocation):
 		self.database = LIFReader(file=databaselocation)
@@ -852,10 +860,10 @@ def setDBFolderVars(dbfolderlocation):
 	global GEOMETRIEPATH
 	global DECORATIONPATH
 	global MATERIALNAMESPATH
-	PRIMITIVEPATH = dbfolderlocation + '/Primitives/'
-	GEOMETRIEPATH = dbfolderlocation + '/Primitives/LOD0/'
-	DECORATIONPATH = dbfolderlocation + '/Decorations/'
-	MATERIALNAMESPATH = dbfolderlocation + '/MaterialNames/'
+	PRIMITIVEPATH = os.path.join(dbfolderlocation, 'Primitives', '')
+	GEOMETRIEPATH = os.path.join(dbfolderlocation, 'Primitives', 'LOD0', '')
+	DECORATIONPATH = os.path.join(dbfolderlocation, 'Decorations', '')
+	MATERIALNAMESPATH = os.path.join(dbfolderlocation, 'MaterialNames', '')
 
 def FindDatabase():
 	lddliftree = os.getenv('LDDLIFTREE')
