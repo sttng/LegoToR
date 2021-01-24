@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
 #
-# LegoToRHD Version 0.5.3.6 on 0.4.8 - Copyright (c) 2019 by jonnysp 
+# LegoToRHD Version 0.5.3.7 on 0.4.8 - Copyright (c) 2019 by jonnysp 
 # LegoToRHD parses LXF files and command line parameters to create USDA compliant files.
 # 
 # Usage: ./LegoToRHD.py /Users/username/Documents/LEGO\ Creations/Models/mylxffile.lxf -np
 #
 # Updates:
+# 0.5.3.7 improved Windows compatibility
 # 0.5.3.6 corrected bug in incorrect parsing of primitive xml file, specifically comments. Add support LDDLIFTREE env var to set location of db.lif.
 # 0.5.3.5 Preliminary Linux support
 # 0.5.3 improved brick-seams generation. Implement nocsv switch (-nc) to ignore using csv colors and use LDD build-in colors instead
@@ -43,7 +44,7 @@ import shutil
 import ParseCommandLine as cl
 import random
 
-__version__ = "0.5.3.6"
+__version__ = "0.5.3.7"
 
 compression = zipfile.ZIP_STORED #uncompressed archive for USDZ, otherwise would use ZIP_DEFLATED, the usual zip compression
 
@@ -64,6 +65,7 @@ class Materials:
 				if usecsvcolors == True:
 					self.MaterialsRi[node.getAttribute('MatID')] = MaterialRi(materialId=node.getAttribute('MatID'), r=int(material_id_dict[node.getAttribute('MatID')][0]), g=int(material_id_dict[node.getAttribute('MatID')][1]), b=int(material_id_dict[node.getAttribute('MatID')][2]), materialType=str(material_id_dict[node.getAttribute('MatID')][3]))
 				elif usecsvcolors == False:
+					
 					self.MaterialsRi[node.getAttribute('MatID')] = MaterialRi(materialId=node.getAttribute('MatID'),r=int(node.getAttribute('Red')), g=int(node.getAttribute('Green')), b=int(node.getAttribute('Blue')), materialType=str(material_id_dict[node.getAttribute('MatID')][3]))
 	
 	def setLOC(self, loc):
@@ -217,9 +219,9 @@ class Converter:
 	def LoadDBFolder(self, dbfolderlocation):
 		self.database = DBFolderReader(folder=dbfolderlocation)
 
-		if self.database.initok and self.database.fileexist(os.path.join(dbfolderlocation,'Materials.xml')) and self.database.fileexist(MATERIALNAMESPATH + 'EN/localizedStrings.loc'):
+		if self.database.initok and self.database.fileexist(os.path.join(dbfolderlocation,'Materials.xml')) and self.database.fileexist(os.path.join(MATERIALNAMESPATH, 'EN' ,'localizedStrings.loc')):
 			self.allMaterials = Materials(data=self.database.filelist[os.path.join(dbfolderlocation,'Materials.xml')].read());
-			self.allMaterials.setLOC(loc=LOCReader(data=self.database.filelist[MATERIALNAMESPATH + 'EN/localizedStrings.loc'].read()))
+			self.allMaterials.setLOC(loc=LOCReader(data=self.database.filelist[os.path.join(MATERIALNAMESPATH + 'EN' ,'localizedStrings.loc')].read()))
 	
 	def LoadDatabase(self,databaselocation):
 		self.database = LIFReader(file=databaselocation)
@@ -691,10 +693,10 @@ def main():
 		global DECORATIONPATH
 		global MATERIALNAMESPATH
 		setDBFolderVars(dbfolderlocation = FindDatabase()) #Required to set in pylddlib... dirty !
-		PRIMITIVEPATH = FindDatabase() + '/Primitives/'
-		GEOMETRIEPATH = FindDatabase() + '/Primitives/LOD0/'
-		DECORATIONPATH = FindDatabase() + '/Decorations/'
-		MATERIALNAMESPATH = FindDatabase() + '/MaterialNames/'
+		PRIMITIVEPATH = os.path.join(FindDatabase(), 'Primitives', '')
+		GEOMETRIEPATH = os.path.join(FindDatabase(), 'Primitives', 'LOD0', '')
+		DECORATIONPATH = os.path.join(FindDatabase(), 'Decorations', '')
+		MATERIALNAMESPATH = os.path.join(FindDatabase(), 'MaterialNames', '')
 		converter.LoadDBFolder(dbfolderlocation = FindDatabase())
 	
 	elif os.path.exists(FindDatabase()):
