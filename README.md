@@ -13,7 +13,7 @@ Both LegoToR & LegoToRHD rely on **pylddlib**. pylddlib.py can be used stand-alo
   - tested on macOS 10.14
   - minor testing on Windows 10 
   - preliminary testing on Linux with Wine 5.0.2 for running LDD on Linux (specifically Ubuntu 20.04.1 LTS was used, others may work with small modifications)
-* Pixar RenderMan  - for txmake (tested on RenderMan 22.3 - 23.5)
+* Pixar RenderMan  - for txmake (tested on RenderMan 22.3 - 24.1)
 
 ## LegoToR
 
