@@ -8,7 +8,7 @@
 # Usage: ./LegoToR.py /Users/username/Documents/LEGO\ Creations/Models/mylxffile.lxf -v -np
 #
 # Updates:
-# 0.5.3.8 Improved compatibility with RenderMan 24 with removing (commenting out) "float g" paramter in materials
+# 0.5.3.8 Improved compatibility with RenderMan 24 by removing (rather commenting out) "float g" parameter in materials
 # 0.5.3.7 Improved LDD material handling
 # 0.5.3.6 Corrected bug in incorrect parsing of primitive xml file, specifically comments. Add support LDDLIFTREE env var to set location of db.lif. Adjusted logoonstuds to be slightly higher
 # 0.5.3.5 Preliminary Linux support
